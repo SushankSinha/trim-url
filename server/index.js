@@ -5,7 +5,12 @@ const linkRoutes = require('./routes/link.routes');
 
 const app = express();
 
-app.use(cors());
+const corsOptions = {
+  origin: ['http://localhost:5173', 'https://trimurls.netlify.app'],
+  methods: ['GET', 'POST', 'HEAD', 'DELETE'],
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(limiter);
 
