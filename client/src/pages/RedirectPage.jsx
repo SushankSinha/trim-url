@@ -12,7 +12,7 @@ export default function RedirectPage() {
     const redirect = async () => {
       try {
         const baseUrl = import.meta.env.VITE_BASE_URL || window.location.origin;
-        const res = await fetch(`${baseUrl}/api/redirect/${code}`);
+        const res = await fetch(`${baseUrl}/redirect/${code}`);
 
         if (!res.ok) {
           if (res.status === 404) {
