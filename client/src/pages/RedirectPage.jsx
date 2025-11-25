@@ -3,43 +3,38 @@ import { useParams } from "react-router-dom";
 
 export default function RedirectPage() {
   const { code } = useParams();
-  const [status, setStatus] = useState("loading"); // loading | notfound | error
+  const [status, setStatus] = useState(!code && "notfound" || "loading"); // loading | notfound | error
 
   useEffect(() => {
-    if (!code) return;
+    if (!code) {
+      return;
+    }
 
-    const fetchAndRedirect = async () => {
+    const checkAndRedirect = async () => {
       try {
         const base = import.meta.env.VITE_BASE_URL || window.location.origin;
-        const url = `${base.replace(/\/$/, "")}/links/${encodeURIComponent(code)}`;
+        const validityUrl = `${base.replace(/\/$/, "")}/links/validity/${encodeURIComponent(code)}`;
 
-        const res = await fetch(url);
+        const res = await fetch(validityUrl);
 
-        if (res.status === 404) {
+        if (res.status === 404 || !res.ok) {
           setStatus("notfound");
           return;
         }
 
-        if (!res.ok) {
-          setStatus("error");
-          return;
-        }
-
-        const data = await res.json();
-        if (data && data.url) {
-          window.location.href = data.url;
-        } else {
-          setStatus("error");
-        }
+        // Valid → redirect immediately to the real backend redirect endpoint
+        const redirectUrl = `${base.replace(/\/$/, "")}/redirect/${code}`;
+        window.location.href = redirectUrl;  // This does the real 302 via your backend
       } catch (err) {
-        console.error("Redirect failed:", err);
+        console.error(err);
         setStatus("error");
       }
     };
 
-    fetchAndRedirect();
+    checkAndRedirect();
   }, [code]);
 
+  // Loading
   if (status === "loading") {
     return (
       <div className="container max-w-3xl" style={{ paddingTop: "60px", textAlign: "center" }}>
@@ -49,33 +44,31 @@ export default function RedirectPage() {
     );
   }
 
+  // Not found
   if (status === "notfound") {
-      return (
-    <div className="container max-w-3xl" style={{ paddingTop: "60px" }}>
-      <div className="card" style={{ padding: "32px", textAlign: "center", color: "var(--danger)" }}>
-        <h2>Link Not Found</h2>
-        <p>This short link doesn't exist or has been deleted.</p>
-        <a href="/" className="btn btn-primary" style={{ marginTop: "12px", display: "inline-block" }}>
-          Create New Link
-        </a>
-      </div>
-    </div>
-  );
-  }
-
-  if (status === "error") {
     return (
       <div className="container max-w-3xl" style={{ paddingTop: "60px" }}>
         <div className="card" style={{ padding: "32px", textAlign: "center", color: "var(--danger)" }}>
-          <h2>Server Error</h2>
-          <p>Something went wrong while processing your link. Please try again.</p>
+          <h2>Link Not Found</h2>
+          <p>This short link doesn't exist or has been deleted.</p>
           <a href="/" className="btn btn-primary" style={{ marginTop: "12px", display: "inline-block" }}>
-            Go Home
+            Create New Link
           </a>
         </div>
       </div>
     );
   }
 
-  return null;
+  // Error
+  return (
+    <div className="container max-w-3xl" style={{ paddingTop: "60px" }}>
+      <div className="card" style={{ padding: "32px", textAlign: "center", color: "var(--danger)" }}>
+        <h2>Server Error</h2>
+        <p>Something went wrong. Please try again later.</p>
+        <a href="/" className="btn btn-primary" style={{ marginTop: "12px", display: "inline-block" }}>
+          Go Home
+        </a>
+      </div>
+    </div>
+  );
 }
